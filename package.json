@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "name": "brightspace-auth-validation",
+  "version": "1.0.0",
+  "description": "Validate an incoming Brightspace JWT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blee-d2l/node-auth-validation.git"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "check-style": "jscs . && jshint .",
+    "test": "npm run check-style && _mocha -R spec spec"
+  },
+  "author": "D2L Corporation",
+  "license": "",
+  "devDependencies": {
+    "chai": "^2.1.0",
+    "jscs": "^1.11.3",
+    "jshint": "^2.6.3",
+    "mocha": "^2.1.0"
+  },
+  "dependencies": {}
+}
