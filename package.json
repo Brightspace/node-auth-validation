@@ -10,15 +10,26 @@
   "main": "src/index.js",
   "scripts": {
     "check-style": "jscs . && jshint .",
-    "test": "npm run check-style && _mocha -R spec spec"
+    "test": "npm run check-style && _mocha -r co-mocha -R spec spec"
   },
   "author": "D2L Corporation",
   "license": "",
   "devDependencies": {
-    "chai": "^2.1.0",
+    "base64-url": "^1.2.1",
+    "chai": "^2.1.1",
+    "co-mocha": "^1.1.0",
     "jscs": "^1.11.3",
     "jshint": "^2.6.3",
-    "mocha": "^2.1.0"
+    "mocha": "^2.1.0",
+    "nock": "^1.0.0",
+    "node-rsa": "^0.2.22"
   },
-  "dependencies": {}
+  "dependencies": {
+    "better-assert": "^1.0.2",
+    "co": "^4.4.0",
+    "jsonwebtoken": "^3.2.2",
+    "jws": "^2.0.0",
+    "rsa-pem-from-mod-exp": "^0.8.4",
+    "superagent": "^0.21.0"
+  }
 }
