@@ -7,30 +7,34 @@ const
 	expect = require('chai').expect,
 	jwt = require('jsonwebtoken'),
 	nock = require('nock'),
-	NodeRSA = require('node-rsa'),
-	url = require('url');
+	NodeRSA = require('node-rsa');
 
 const
-	AUTH_SERVICE_URI = require('./__env').AUTH_SERVICE_URI,
+	ISSUER = 'http://auth-bar-baz.test.d2l/baz',
 	JWKS_PATH = '/this-is-the-place-the-jwks-is';
 
-const getValidatedAuthToken = require('../');
+const AuthTokenValidator = require('../');
 
 describe('validations', function () {
 	let key,
 		privateKeyPem,
-		openIdInterceptor;
+		openIdInterceptor,
+		validator;
 	before(function () {
 		key = new NodeRSA({ b: 512 });
 		privateKeyPem = key.exportKey('pkcs1-private-pem');
 
-		openIdInterceptor = nock(AUTH_SERVICE_URI)
+		openIdInterceptor = nock(ISSUER)
 			.replyContentLength()
-			.get('/core/.well-known/openid-configuration')
+			.get('/.well-known/openid-configuration')
 			.times(2)
 			.reply(200, {
-				jwks_uri: url.resolve(AUTH_SERVICE_URI, JWKS_PATH)
+				jwks_uri: ISSUER + JWKS_PATH
 			});
+
+		validator = new AuthTokenValidator({
+			issuer: ISSUER
+		});
 	});
 
 	after(function () {
@@ -40,29 +44,29 @@ describe('validations', function () {
 	it('should throw "NoAuthorizationProvided" when there is no auth header', function *() {
 		let err;
 		try {
-			yield getValidatedAuthToken({});
+			yield validator.fromHeaders({});
 		} catch (e) {
 			err = e;
 		}
 
-		expect(err).to.be.an.instanceof(getValidatedAuthToken.errors.NoAuthorizationProvided);
+		expect(err).to.be.an.instanceof(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
 	it('should throw "NoAuthorizationProvided" when auth header is not a Bearer token', function *() {
 		let err;
 		try {
-			yield getValidatedAuthToken({
+			yield validator.fromHeaders({
 				authorization: 'Basic foobarbaz'
 			});
 		} catch (e) {
 			err = e;
 		}
 
-		expect(err).to.be.an.instanceof(getValidatedAuthToken.errors.NoAuthorizationProvided);
+		expect(err).to.be.an.instanceof(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
 	it('should throw "PublicKeyNotFound" when no key with matching "kid" is found on auth server', function *() {
-		const jwksInterceptor = nock(AUTH_SERVICE_URI)
+		const jwksInterceptor = nock(ISSUER)
 			.replyContentLength()
 			.get(JWKS_PATH)
 			.reply(200, {
@@ -81,14 +85,14 @@ describe('validations', function () {
 					kid: 'foo-bar-baz'
 				}
 			});
-			yield getValidatedAuthToken({
+			yield validator.fromHeaders({
 				authorization: `Bearer ${ token }`
 			});
 		} catch (e) {
 			err = e;
 		}
 
-		expect(err).to.be.an.instanceof(getValidatedAuthToken.errors.PublicKeyNotFound);
+		expect(err).to.be.an.instanceof(AuthTokenValidator.errors.PublicKeyNotFound);
 		jwksInterceptor.done();
 	});
 
@@ -101,7 +105,7 @@ describe('validations', function () {
 			})(key.keyPair.e),
 			n = base64Url.escape(key.keyPair.n.toBuffer().toString('base64'));
 
-		const jwksInterceptor = nock(AUTH_SERVICE_URI)
+		const jwksInterceptor = nock(ISSUER)
 			.replyContentLength()
 			.get(JWKS_PATH)
 			.reply(200, {
@@ -121,7 +125,7 @@ describe('validations', function () {
 				}
 			});
 
-		const token = yield getValidatedAuthToken({
+		const token = yield validator.fromHeaders({
 			authorization: `Bearer ${ signature }`
 		});
 

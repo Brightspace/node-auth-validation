@@ -6,19 +6,14 @@ const
 	getPem = require('rsa-pem-from-mod-exp'),
 	jws = require('jws'),
 	jwt = require('jsonwebtoken'),
-	request = require('superagent'),
-	url = require('url');
+	request = require('superagent');
 
 const errors = require('./errors');
 
 const
-	AUTH_SERVICE_URI = process.env.AUTH_SERVICE_URI || 'https://auth.proddev.d2l:44331',
-	AUTH_SERVICE_OPENID_PATH = '/core/.well-known/openid-configuration',
-	AUTH_SERVICE_OPENID_URI = url.resolve(AUTH_SERVICE_URI, AUTH_SERVICE_OPENID_PATH),
-	MAX_PUBLIC_KEY_AGE = 60 * 60 * 5;
-
-let publicKeys = new Map(),
-	publicKeysUpdating;
+	DEFAULT_ISSUER = 'https://auth.proddev.d2l:44331/core',
+	DEFAULT_MAX_KEY_AGE = 5 * 60 * 60,
+	OPENID_PATH = '/.well-known/openid-configuration';
 
 function clock () {
 	return Math.round(Date.now() / 1000);
@@ -41,22 +36,15 @@ function getJsonUri (uri) {
 	});
 }
 
-function getJwksUriFromOpenId (openIdConfig) {
-	assert('object' === typeof openIdConfig);
-	assert('string' === typeof openIdConfig.jwks_uri);
-
-	return openIdConfig.jwks_uri;
-}
-
-function processJwks (jwks) {
+function processJwks (jwks, knownPublicKeys, maxKeyAge) {
 	assert('object' === typeof jwks);
 	assert(Array.isArray(jwks.keys));
+	assert(knownPublicKeys instanceof Map);
+	assert('number' === typeof maxKeyAge);
 
 	const
 		currentPublicKeys = new Map(),
-		knownPublicKeys = publicKeys;
-
-	const expiry = clock() + MAX_PUBLIC_KEY_AGE;
+		expiry = clock() + maxKeyAge;
 
 	for (let jwk of jwks.keys) {
 		assert('object' === typeof jwk);
@@ -74,54 +62,25 @@ function processJwks (jwks) {
 		});
 	}
 
-	publicKeys = currentPublicKeys;
+	return currentPublicKeys;
 }
 
-const updatePublicKeys = co.wrap(function *updatePublicKeys () {
-	const openIdConfig = yield getJsonUri(AUTH_SERVICE_OPENID_URI);
-	const jwks = yield getJsonUri(getJwksUriFromOpenId(openIdConfig));
-	processJwks(jwks);
-});
-
-const getPublicKey = co.wrap(function *getPublicKey (signature) {
-	assert('string' === typeof signature);
-
-	const decodedToken = jws.decode(signature);
-
-	assert('object' === typeof decodedToken.header);
-
-	const kid = decodedToken.header.kid;
-
-	assert('string' === typeof kid);
-
-	if (publicKeys.has(kid)) {
-		const publicKey = publicKeys.get(kid);
-
-		assert('object' === typeof publicKey);
-		assert('string' === typeof publicKey.pem);
-		assert('number' === typeof publicKey.expiry);
-
-		if (clock() < publicKey.expiry) {
-			return publicKey.pem;
-		}
+function AuthTokenValidator (opts) {
+	if (!(this instanceof AuthTokenValidator)) {
+		return new AuthTokenValidator(opts);
 	}
 
-	if (!publicKeysUpdating) {
-		publicKeysUpdating = updatePublicKeys().then(function () {
-			publicKeysUpdating = undefined;
-		});
-	}
+	opts = opts || {};
 
-	yield publicKeysUpdating;
+	const issuer = 'string' === typeof opts.issuer ? opts.issuer.replace(/\/+$/g, '') : DEFAULT_ISSUER;
 
-	if (publicKeys.has(kid)) {
-		return publicKeys.get(kid).pem;
-	}
+	this._openIdUri = `${ issuer }${ OPENID_PATH }`;
+	this._maxKeyAge = 'number' === typeof opts.maxKeyAge ? opts.maxKeyAge : DEFAULT_MAX_KEY_AGE;
+	this._keyCache = new Map();
+	this._keysUpdating = null;
+}
 
-	throw new errors.PublicKeyNotFound(kid);
-});
-
-const getValidatedAuthToken = co.wrap(function *getValidatedAuthToken (headers) {
+AuthTokenValidator.prototype.fromHeaders = function getValidatedAuthTokenFromHeaders (headers) {
 	assert('object' === typeof headers);
 
 	const authHeader = headers.authorization;
@@ -136,11 +95,66 @@ const getValidatedAuthToken = co.wrap(function *getValidatedAuthToken (headers) 
 
 	const signature = signatureMatch[1];
 
-	const key = yield getPublicKey(signature);
+	return this.fromSignature(signature);
+};
+
+AuthTokenValidator.prototype.fromSignature = co.wrap(function *getValidatedAuthTokenFromSignature (signature) {
+	assert('string' === typeof signature);
+
+	const key = yield this._getPublicKey(signature);
 	const token = jwt.verify(signature, key);
 
 	return token;
 });
 
-module.exports = getValidatedAuthToken;
+AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) {
+	assert('string' === typeof signature);
+
+	const decodedToken = jws.decode(signature);
+
+	assert('object' === typeof decodedToken.header);
+
+	const kid = decodedToken.header.kid;
+
+	assert('string' === typeof kid);
+
+	if (this._keyCache.has(kid)) {
+		const publicKey = this._keyCache.get(kid);
+
+		assert('object' === typeof publicKey);
+		assert('string' === typeof publicKey.pem);
+		assert('number' === typeof publicKey.expiry);
+
+		if (clock() < publicKey.expiry) {
+			return publicKey.pem;
+		}
+	}
+
+	if (!this._keysUpdating) {
+		const self = this;
+
+		this._keysUpdating = this
+			._updatePublicKeys()
+			.then(function () {
+				self._keysUpdating = null;
+			});
+	}
+
+	yield this._keysUpdating;
+
+	if (this._keyCache.has(kid)) {
+		return this._keyCache.get(kid).pem;
+	}
+
+	throw new errors.PublicKeyNotFound(kid);
+};
+
+AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicKeys () {
+	const openIdConfig = yield getJsonUri(this._openIdUri);
+	const jwks = yield getJsonUri(openIdConfig.jwks_uri);
+
+	this._keyCache = processJwks(jwks, this._keyCache, this._maxKeyAge);
+});
+
+module.exports = AuthTokenValidator;
 module.exports.errors = errors;

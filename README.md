@@ -4,10 +4,10 @@
 ## Example
 
 ```js
-const getValidatedAuthToken = require('brightspace-auth-validation');
+const validator = new (require('brightspace-auth-validation'))();
 
 function *authMiddleware (next) {
-	const auth = yield getValidatedAuthToken(this.headers);
+	const auth = yield validator.fromHeaders(this.headers);
 
 	this.auth = auth;
 
