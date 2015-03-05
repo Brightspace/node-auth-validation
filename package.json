@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "brightspace-auth-validation",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Validate an incoming Brightspace JWT",
   "repository": {
     "type": "git",
