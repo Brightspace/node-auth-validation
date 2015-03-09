@@ -10,7 +10,7 @@
   "main": "src/index.js",
   "scripts": {
     "check-style": "jscs . && jshint .",
-    "test": "npm run check-style && _mocha -r co-mocha -R spec spec"
+    "test": "npm run check-style && mocha -r co-mocha -R spec spec"
   },
   "author": "D2L Corporation",
   "license": "",
