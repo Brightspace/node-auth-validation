@@ -1,13 +1,13 @@
-/* global after, before, describe, it */
+/* global after, before, beforeEach, describe, it */
 
 'use strict';
 
 const
-	base64Url = require('base64-url'),
 	expect = require('chai').expect,
 	jwt = require('jsonwebtoken'),
 	nock = require('nock'),
-	NodeRSA = require('node-rsa');
+	NodeRSA = require('node-rsa'),
+	rsaPemToJwk = require('rsa-pem-to-jwk');
 
 const
 	ISSUER = 'http://auth-bar-baz.test.d2l/baz',
@@ -16,13 +16,13 @@ const
 const AuthTokenValidator = require('../');
 
 describe('validations', function () {
-	let key,
+	let jwk,
 		privateKeyPem,
 		openIdInterceptor,
 		validator;
 	before(function () {
-		key = new NodeRSA({ b: 512 });
-		privateKeyPem = key.exportKey('pkcs1-private-pem');
+		privateKeyPem = new NodeRSA({ b: 512 }).exportKey('pkcs1-private-pem') + '\n';
+		jwk = rsaPemToJwk(privateKeyPem, { kid: 'foo-bar-baz', use: 'sig' }, 'public');
 
 		openIdInterceptor = nock(ISSUER)
 			.replyContentLength()
@@ -31,7 +31,9 @@ describe('validations', function () {
 			.reply(200, {
 				jwks_uri: ISSUER + JWKS_PATH
 			});
+	});
 
+	beforeEach(function () {
 		validator = new AuthTokenValidator({
 			issuer: ISSUER
 		});
@@ -70,11 +72,7 @@ describe('validations', function () {
 			.replyContentLength()
 			.get(JWKS_PATH)
 			.reply(200, {
-				keys: [{
-					kid: 'errmegerd',
-					n: '1234',
-					e: '8484'
-				}]
+				keys: [jwk]
 			});
 
 		let err;
@@ -82,7 +80,7 @@ describe('validations', function () {
 			const token = jwt.sign({}, privateKeyPem, {
 				algorithm: 'RS256',
 				header: {
-					kid: 'foo-bar-baz'
+					kid: 'errmegerd'
 				}
 			});
 			yield validator.fromHeaders({
@@ -97,23 +95,11 @@ describe('validations', function () {
 	});
 
 	it('should return JWT when matching "kid" is found on auth server and signature is valid', function *() {
-		const
-			e = (function (exp) {
-				const buf = new Buffer(3);
-				buf.writeUIntBE(exp, 0, 3);
-				return base64Url.escape(buf.toString('base64'));
-			})(key.keyPair.e),
-			n = base64Url.escape(key.keyPair.n.toBuffer().toString('base64'));
-
 		const jwksInterceptor = nock(ISSUER)
 			.replyContentLength()
 			.get(JWKS_PATH)
 			.reply(200, {
-				keys: [{
-					kid: 'foo-bar-baz',
-					n: n,
-					e: e
-				}]
+				keys: [jwk]
 			});
 
 		const
