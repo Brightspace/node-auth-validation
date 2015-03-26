@@ -1,11 +1,10 @@
 {
-  "private": true,
-  "name": "brightspace-auth-validation",
+  "name": "@d2l/brightspace-auth-validation",
   "version": "2.0.0",
   "description": "Validate an incoming Brightspace JWT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/blee-d2l/node-auth-validation.git"
+    "url": "https://github.com/Brightspace/node-auth-validation.git"
   },
   "main": "src/index.js",
   "scripts": {
