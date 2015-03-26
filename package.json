@@ -27,9 +27,9 @@
   "dependencies": {
     "better-assert": "^1.0.2",
     "co": "^4.4.0",
-    "jsonwebtoken": "^3.2.2",
+    "jsonwebtoken": "^4.2.2",
     "jws": "^2.0.0",
     "rsa-pem-from-mod-exp": "^0.8.4",
-    "superagent": "^0.21.0"
+    "superagent": "^1.1.0"
   }
 }
