@@ -1,5 +1,5 @@
 # brightspace-auth-validation
-[![BuildStatus](https://magnum.travis-ci.com/blee-d2l/node-auth-validation.svg?token=ayc5reQ1Z16PZREzv2eW&branch=master)](https://magnum.travis-ci.com/blee-d2l/node-auth-validation)
+[![Build Status](https://magnum.travis-ci.com/Brightspace/node-auth-validation.svg?token=M9m6audKHodN5pA44rGq&branch=master)](https://magnum.travis-ci.com/Brightspace/node-auth-validation)
 
 ## Example
 
