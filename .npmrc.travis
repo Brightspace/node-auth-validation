@@ -1,0 +1,5 @@
+@d2l:registry=http://d2lartifacts.artifactoryonline.com/d2lartifacts/api/npm/npm-local/
+//d2lartifacts.artifactoryonline.com/d2lartifacts/api/npm/npm-local/:_password=QVA3VGtFMzdxckNZQmRuNFR2R2FkWHp1enlv
+//d2lartifacts.artifactoryonline.com/d2lartifacts/api/npm/npm-local/:username=ro-travisci-node-oauth2
+//d2lartifacts.artifactoryonline.com/d2lartifacts/api/npm/npm-local/:email=ro-travisci-node-oauth2@d2l.com
+//d2lartifacts.artifactoryonline.com/d2lartifacts/api/npm/npm-local/:always-auth=true
