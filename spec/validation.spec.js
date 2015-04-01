@@ -3,6 +3,7 @@
 'use strict';
 
 const
+	BrightspaceAuthToken = require('@d2l/brightspace-auth-token'),
 	expect = require('chai').expect,
 	jwt = require('jsonwebtoken'),
 	nock = require('nock'),
@@ -94,7 +95,7 @@ describe('validations', function () {
 		jwksInterceptor.done();
 	});
 
-	it('should return JWT when matching "kid" is found on auth server and signature is valid', function *() {
+	it('should return BrightspaceAuthToken when matching "kid" is found on auth server and signature is valid', function *() {
 		const jwksInterceptor = nock(ISSUER)
 			.replyContentLength()
 			.get(JWKS_PATH)
@@ -115,7 +116,8 @@ describe('validations', function () {
 			authorization: `Bearer ${ signature }`
 		});
 
-		expect(token).to.deep.equal(payload);
+		expect(token).to.be.instanceof(BrightspaceAuthToken);
+		expect(token.source).to.equal(signature);
 
 		jwksInterceptor.done();
 	});

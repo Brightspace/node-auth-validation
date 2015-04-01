@@ -2,6 +2,7 @@
 
 const
 	assert = require('better-assert'),
+	AuthToken = require('@d2l/brightspace-auth-token'),
 	co = require('co'),
 	getPem = require('rsa-pem-from-mod-exp'),
 	jws = require('jws'),
@@ -102,7 +103,9 @@ AuthTokenValidator.prototype.fromSignature = co.wrap(function *getValidatedAuthT
 	assert('string' === typeof signature);
 
 	const key = yield this._getPublicKey(signature);
-	const token = jwt.verify(signature, key);
+	const payload = jwt.verify(signature, key);
+
+	const token = new AuthToken(payload, signature);
 
 	return token;
 });
