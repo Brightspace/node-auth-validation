@@ -14,7 +14,7 @@ const errors = require('./errors');
 const
 	DEFAULT_ISSUER = 'https://auth.proddev.d2l:44331/core',
 	DEFAULT_MAX_KEY_AGE = 5 * 60 * 60,
-	OPENID_PATH = '/.well-known/openid-configuration';
+	JWKS_PATH = '/.well-known/jwks';
 
 function clock () {
 	return Math.round(Date.now() / 1000);
@@ -75,7 +75,7 @@ function AuthTokenValidator (opts) {
 
 	const issuer = 'string' === typeof opts.issuer ? opts.issuer.replace(/\/+$/g, '') : DEFAULT_ISSUER;
 
-	this._openIdUri = `${ issuer }${ OPENID_PATH }`;
+	this._jwksUri = `${ issuer }${ JWKS_PATH }`;
 	this._maxKeyAge = 'number' === typeof opts.maxKeyAge ? opts.maxKeyAge : DEFAULT_MAX_KEY_AGE;
 	this._keyCache = new Map();
 	this._keysUpdating = null;
@@ -153,8 +153,7 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 };
 
 AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicKeys () {
-	const openIdConfig = yield getJsonUri(this._openIdUri);
-	const jwks = yield getJsonUri(openIdConfig.jwks_uri);
+	const jwks = yield getJsonUri(this._jwksUri);
 
 	this._keyCache = processJwks(jwks, this._keyCache, this._maxKeyAge);
 });
