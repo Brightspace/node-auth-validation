@@ -1,4 +1,4 @@
-/* global after, before, beforeEach, describe, it */
+/* global before, beforeEach, describe, it */
 
 'use strict';
 
@@ -12,36 +12,23 @@ const
 
 const
 	ISSUER = 'http://auth-bar-baz.test.d2l/baz',
-	JWKS_PATH = '/this-is-the-place-the-jwks-is';
+	JWKS_PATH = '/.well-known/jwks';
 
 const AuthTokenValidator = require('../');
 
 describe('validations', function () {
 	let jwk,
 		privateKeyPem,
-		openIdInterceptor,
 		validator;
 	before(function () {
 		privateKeyPem = new NodeRSA({ b: 512 }).exportKey('pkcs1-private-pem') + '\n';
 		jwk = rsaPemToJwk(privateKeyPem, { kid: 'foo-bar-baz', use: 'sig' }, 'public');
-
-		openIdInterceptor = nock(ISSUER)
-			.replyContentLength()
-			.get('/.well-known/openid-configuration')
-			.times(2)
-			.reply(200, {
-				jwks_uri: ISSUER + JWKS_PATH
-			});
 	});
 
 	beforeEach(function () {
 		validator = new AuthTokenValidator({
 			issuer: ISSUER
 		});
-	});
-
-	after(function () {
-		openIdInterceptor.done();
 	});
 
 	it('should throw "NoAuthorizationProvided" when there is no auth header', function *() {
