@@ -14,6 +14,11 @@ describe('errors', function () {
 		done();
 	});
 
+	it('should include "BadTokenError"', function (done) {
+		expect(pkgExport.errors.BadToken).to.equal(errors.BadToken);
+		done();
+	});
+
 	it('should include "NoAuthizationProvidedError"', function (done) {
 		expect(pkgExport.errors.NoAuthorizationProvided).to.equal(errors.NoAuthorizationProvided);
 		done();
