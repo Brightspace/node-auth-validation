@@ -22,7 +22,7 @@ util.inherits(PublicKeyNotFoundError, Error);
 
 function NoAuthorizationProvidedError () {
 	this.name = 'NoAuthorizationProvidedError';
-	this.status = 403;
+	this.status = 401;
 	this.message = 'An authorization method wasn\'t provided';
 
 	Error.captureStackTrace(this, this.constructor);
