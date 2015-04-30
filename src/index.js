@@ -103,7 +103,15 @@ AuthTokenValidator.prototype.fromSignature = co.wrap(function *getValidatedAuthT
 	assert('string' === typeof signature);
 
 	const key = yield this._getPublicKey(signature);
-	const payload = jwt.verify(signature, key);
+	let payload;
+	try {
+		payload = jwt.verify(signature, key);
+	} catch (err) {
+		if ('TokenExpiredError' === err.name) {
+			throw new errors.BadToken(err.message);
+		}
+		throw err;
+	}
 
 	const token = new AuthToken(payload, signature);
 
@@ -114,6 +122,9 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 	assert('string' === typeof signature);
 
 	const decodedToken = jws.decode(signature);
+	if (!decodedToken) {
+		throw new errors.BadToken('Not a valid signature');
+	}
 
 	assert('object' === typeof decodedToken.header);
 
