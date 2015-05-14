@@ -12,7 +12,7 @@ const
 const errors = require('./errors');
 
 const
-	DEFAULT_ISSUER = 'https://auth.proddev.d2l:44331/core',
+	DEFAULT_ISSUER = 'https://auth.brightspace.com/core',
 	DEFAULT_MAX_KEY_AGE = 5 * 60 * 60,
 	JWKS_PATH = '/.well-known/jwks';
 
