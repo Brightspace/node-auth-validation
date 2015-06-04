@@ -135,6 +135,30 @@ describe('validations', function () {
 		jwkInterceptor.done();
 	});
 
+	it('should throw "PublicKeyLookupFailed" when there is an error requesting the jwks', function *() {
+		token = jwt.sign({}, privateKeyPem, {
+			algorithm: 'RS256',
+			header: {
+				kid: 'errmegerd'
+			}
+		});
+
+		jwkInterceptor = nock(ISSUER)
+			.replyContentLength()
+			.get(JWKS_PATH)
+			.reply(404);
+
+		try {
+			yield validator.fromHeaders({
+				authorization: `Bearer ${ token }`
+			});
+		} catch (e) {
+			error = e;
+		}
+		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.PublicKeyLookupFailed);
+		jwkInterceptor.done();
+	});
+
 	it('should return BrightspaceAuthToken when matching "kid" is found on auth server and signature is valid', function *() {
 		const
 			payload = {

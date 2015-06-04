@@ -28,4 +28,8 @@ describe('errors', function () {
 		expect(pkgExport.errors.PublicKeyNotFound).to.equal(errors.PublicKeyNotFound);
 		done();
 	});
+
+	it('should include "PublicKeyLookupFailedError"', function () {
+		expect(pkgExport.errors.PublicKeyLookupFailed).to.equal(errors.PublicKeyLookupFailed);
+	});
 });
