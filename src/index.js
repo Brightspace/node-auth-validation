@@ -4,7 +4,7 @@ const
 	assert = require('better-assert'),
 	AuthToken = require('@d2l/brightspace-auth-token'),
 	co = require('co'),
-	getPem = require('rsa-pem-from-mod-exp'),
+	jwkToPem = require('jwk-to-pem'),
 	jws = require('jws'),
 	jwt = require('jsonwebtoken'),
 	request = require('superagent');
@@ -50,12 +50,10 @@ function processJwks (jwks, knownPublicKeys, maxKeyAge) {
 	for (let jwk of jwks.keys) {
 		assert('object' === typeof jwk);
 		assert('string' === typeof jwk.kid);
-		assert('string' === typeof jwk.e);
-		assert('string' === typeof jwk.n);
 
 		const pem = knownPublicKeys.has(jwk.kid)
 			? knownPublicKeys.get(jwk.kid).pem
-			: getPem(jwk.n, jwk.e);
+			: jwkToPem(jwk);
 
 		currentPublicKeys.set(jwk.kid, {
 			expiry: expiry,
