@@ -20,23 +20,6 @@ function clock () {
 	return Math.round(Date.now() / 1000);
 }
 
-function getJsonUri (uri) {
-	assert('string' === typeof uri);
-
-	return new Promise(function (resolve, reject) {
-		request
-			.get(uri)
-			.end(function (err, res) {
-				if (err) {
-					reject(err);
-					return;
-				}
-
-				resolve(res.body);
-			});
-	});
-}
-
 function processJwks (jwks, knownPublicKeys, maxKeyAge) {
 	assert('object' === typeof jwks);
 	assert(Array.isArray(jwks.keys));
@@ -164,7 +147,20 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 };
 
 AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicKeys () {
-	const jwks = yield getJsonUri(this._jwksUri);
+	const self = this;
+
+	const jwks = yield new Promise(function (resolve, reject) {
+		request
+			.get(self._jwksUri)
+			.end(function (err, res) {
+				if (err) {
+					reject(new errors.PublicKeyLookupFailed(err));
+					return;
+				}
+
+				resolve(res.body);
+			});
+	});
 
 	this._keyCache = processJwks(jwks, this._keyCache, this._maxKeyAge);
 });

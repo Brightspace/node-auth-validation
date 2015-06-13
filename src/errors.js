@@ -29,8 +29,23 @@ function NoAuthorizationProvidedError () {
 }
 util.inherits(NoAuthorizationProvidedError, Error);
 
+function PublicKeyLookupFailedError (inner) {
+	this.name = 'PublicKeyLookupFailedError';
+	this.status = 500;
+	this.message = 'An error occurred while looking up public keys';
+	this.inner = inner;
+
+	if (inner && inner.stack) {
+		this.stack = inner.stack;
+	} else {
+		Error.captureStackTrace(this, this.constructor);
+	}
+}
+util.inherits(PublicKeyLookupFailedError, Error);
+
 module.exports = {
 	PublicKeyNotFound: PublicKeyNotFoundError,
 	NoAuthorizationProvided: NoAuthorizationProvidedError,
-	BadToken: BadJsonWebTokenError
+	BadToken: BadJsonWebTokenError,
+	PublicKeyLookupFailed: PublicKeyLookupFailedError
 };
