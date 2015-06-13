@@ -28,8 +28,8 @@
     "better-assert": "^1.0.2",
     "co": "^4.4.0",
     "jsonwebtoken": "^5.0.0",
+    "jwk-to-pem": "^1.0.2",
     "jws": "^3.0.0",
-    "rsa-pem-from-mod-exp": "^0.8.4",
     "superagent": "^1.1.0"
   }
 }
