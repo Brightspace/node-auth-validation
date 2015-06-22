@@ -132,6 +132,10 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 			._updatePublicKeys()
 			.then(function () {
 				self._keysUpdating = null;
+			})
+			.catch(function (e) {
+				self._keysUpdating = null;
+				throw e;
 			});
 	}
 
