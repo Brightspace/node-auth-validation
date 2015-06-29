@@ -4,6 +4,7 @@ const
 	assert = require('better-assert'),
 	AuthToken = require('@d2l/brightspace-auth-token'),
 	co = require('co'),
+	jwkAllowedAlgorithms = require('jwk-allowed-algorithms'),
 	jwkToPem = require('jwk-to-pem'),
 	jws = require('jws'),
 	jwt = require('jsonwebtoken'),
@@ -37,10 +38,12 @@ function processJwks (jwks, knownPublicKeys, maxKeyAge) {
 		const pem = knownPublicKeys.has(jwk.kid)
 			? knownPublicKeys.get(jwk.kid).pem
 			: jwkToPem(jwk);
+		const allowedAlgorithms = jwkAllowedAlgorithms(jwk);
 
 		currentPublicKeys.set(jwk.kid, {
 			expiry: expiry,
-			pem: pem
+			pem: pem,
+			allowedAlgorithms: allowedAlgorithms
 		});
 	}
 
@@ -86,7 +89,7 @@ AuthTokenValidator.prototype.fromSignature = co.wrap(function *getValidatedAuthT
 	const key = yield this._getPublicKey(signature);
 	let payload;
 	try {
-		payload = jwt.verify(signature, key);
+		payload = jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms });
 	} catch (err) {
 		if ('TokenExpiredError' === err.name) {
 			throw new errors.BadToken(err.message);
@@ -119,9 +122,10 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 		assert('object' === typeof publicKey);
 		assert('string' === typeof publicKey.pem);
 		assert('number' === typeof publicKey.expiry);
+		assert(Array.isArray(publicKey.allowedAlgorithms));
 
 		if (clock() < publicKey.expiry) {
-			return publicKey.pem;
+			return publicKey;
 		}
 	}
 
@@ -142,7 +146,7 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 	yield this._keysUpdating;
 
 	if (this._keyCache.has(kid)) {
-		return this._keyCache.get(kid).pem;
+		return this._keyCache.get(kid);
 	}
 
 	throw new errors.PublicKeyNotFound(kid);
