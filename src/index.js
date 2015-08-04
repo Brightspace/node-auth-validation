@@ -138,7 +138,7 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 	throw new errors.PublicKeyNotFound(kid);
 };
 
-AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicKeys () {
+AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys () {
 	const self = this;
 
 	if (!this._keysUpdating) {
@@ -154,18 +154,16 @@ AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicK
 					resolve(res.body);
 				});
 		}).then(function (jwks) {
+			self._keyCache = processJwks(jwks, self._keyCache, self._maxKeyAge);
 			self._keysUpdating = null;
-			return jwks;
 		}).catch(function (e) {
 			self._keysUpdating = null;
 			throw e;
 		});
 	}
 
-	const jwks = yield this._keysUpdating;
-
-	this._keyCache = processJwks(jwks, this._keyCache, this._maxKeyAge);
-});
+	return this._keysUpdating;
+};
 
 AuthTokenValidator.prototype.validateConfiguration = co.wrap(function *() {
 	yield this._updatePublicKeys();
