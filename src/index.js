@@ -129,21 +129,7 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 		}
 	}
 
-	if (!this._keysUpdating) {
-		const self = this;
-
-		this._keysUpdating = this
-			._updatePublicKeys()
-			.then(function () {
-				self._keysUpdating = null;
-			})
-			.catch(function (e) {
-				self._keysUpdating = null;
-				throw e;
-			});
-	}
-
-	yield this._keysUpdating;
+	yield this._updatePublicKeys();
 
 	if (this._keyCache.has(kid)) {
 		return this._keyCache.get(kid);
@@ -155,37 +141,37 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicKeys () {
 	const self = this;
 
-	const jwks = yield new Promise(function (resolve, reject) {
-		request
-			.get(self._jwksUri)
-			.end(function (err, res) {
-				if (err) {
-					reject(new errors.PublicKeyLookupFailed(err));
-					return;
-				}
+	if (!this._keysUpdating) {
+		this._keysUpdating = new Promise(function (resolve, reject) {
+			request
+				.get(self._jwksUri)
+				.end(function (err, res) {
+					if (err) {
+						reject(new errors.PublicKeyLookupFailed(err));
+						return;
+					}
 
-				resolve(res.body);
-			});
-	});
+					resolve(res.body);
+				});
+		}).then(function (jwks) {
+			self._keysUpdating = null;
+			return jwks;
+		}).catch(function (e) {
+			self._keysUpdating = null;
+			throw e;
+		});
+	}
+
+	const jwks = yield this._keysUpdating;
 
 	this._keyCache = processJwks(jwks, this._keyCache, this._maxKeyAge);
 });
 
-AuthTokenValidator.prototype.validateConfiguration = function () {
-	const jwksUri = this._jwksUri;
+AuthTokenValidator.prototype.validateConfiguration = co.wrap(function *() {
+	yield this._updatePublicKeys();
 
-	return new Promise(function (resolve, reject) {
-		request
-			.get(jwksUri)
-			.end(function (err, res) {
-				if (res && res.ok) {
-					resolve(true);
-				} else {
-					reject(err);
-				}
-			});
-	});
-};
+	return true;
+});
 
 module.exports = AuthTokenValidator;
 module.exports.errors = errors;

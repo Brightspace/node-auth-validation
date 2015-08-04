@@ -243,7 +243,9 @@ describe('validations', function () {
 		it('should return true when configuration is valid', function *() {
 			jwkInterceptor = nock(ISSUER)
 				.get(JWKS_PATH)
-				.reply(200);
+				.reply(200, {
+					keys: [jwk]
+				});
 
 			const auth = new AuthTokenValidator({
 				issuer: ISSUER
