@@ -6,7 +6,9 @@ process.env.AUTH_SERVICE_URI = 'http://auth-bar-baz.test.d2l/baz';
 
 const
 	BrightspaceAuthToken = require('@d2l/brightspace-auth-token'),
-	expect = require('chai').expect,
+	chai = require('chai'),
+	chaiAsPromised = require('chai-as-promised'),
+	expect = chai.expect,
 	jwt = require('jsonwebtoken'),
 	nock = require('nock'),
 	NodeRSA = require('node-rsa'),
@@ -17,6 +19,8 @@ const
 	JWKS_PATH = '/.well-known/jwks';
 
 const AuthTokenValidator = require('../');
+
+chai.use(chaiAsPromised);
 
 describe('validations', function () {
 	let
@@ -233,5 +237,35 @@ describe('validations', function () {
 		expect(token).to.be.instanceof(BrightspaceAuthToken);
 		expect(token.source).to.equal(signature);
 		jwkInterceptor.done();
+	});
+
+	describe('validateConfiguration', function () {
+		it('should return true when public keys can be updated', function *() {
+			jwkInterceptor = nock(ISSUER)
+				.get(JWKS_PATH)
+				.reply(200, {
+					keys: [jwk]
+				});
+
+			const auth = new AuthTokenValidator({
+				issuer: ISSUER
+			});
+
+			yield expect(auth.validateConfiguration()).to.eventually.be.true;
+
+			jwkInterceptor.done();
+		});
+
+		it('should return an error when public key lookup fails', function *() {
+			jwkInterceptor = nock(ISSUER)
+				.get(JWKS_PATH)
+				.reply(404);
+
+			const auth = new AuthTokenValidator({
+				issuer: ISSUER
+			});
+
+			yield expect(auth.validateConfiguration()).to.be.rejectedWith(Error);
+		});
 	});
 });
