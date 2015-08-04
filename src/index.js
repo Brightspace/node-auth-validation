@@ -171,5 +171,21 @@ AuthTokenValidator.prototype._updatePublicKeys = co.wrap(function *updatePublicK
 	this._keyCache = processJwks(jwks, this._keyCache, this._maxKeyAge);
 });
 
+AuthTokenValidator.prototype.validateConfiguration = function () {
+	const jwksUri = this._jwksUri;
+
+	return new Promise(function (resolve, reject) {
+		request
+			.get(jwksUri)
+			.end(function (err, res) {
+				if (res && res.ok) {
+					resolve(true);
+				} else {
+					reject(err);
+				}
+			});
+	});
+};
+
 module.exports = AuthTokenValidator;
 module.exports.errors = errors;

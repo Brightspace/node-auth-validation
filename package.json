@@ -15,6 +15,7 @@
   "license": "",
   "devDependencies": {
     "chai": "^2.1.1",
+    "chai-as-promised": "^5.1.0",
     "co-mocha": "^1.1.0",
     "jscs": "^1.11.3",
     "jshint": "^2.6.3",
