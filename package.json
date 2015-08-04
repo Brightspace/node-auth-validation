@@ -1,6 +1,6 @@
 {
   "name": "@d2l/brightspace-auth-validation",
-  "version": "5.0.3",
+  "version": "5.1.0",
   "description": "Validate an incoming Brightspace JWT",
   "repository": {
     "type": "git",
