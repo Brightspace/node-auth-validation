@@ -240,7 +240,7 @@ describe('validations', function () {
 	});
 
 	describe('validateConfiguration', function () {
-		it('should return true when configuration is valid', function *() {
+		it('should return true when public keys can be updated', function *() {
 			jwkInterceptor = nock(ISSUER)
 				.get(JWKS_PATH)
 				.reply(200, {
@@ -256,7 +256,7 @@ describe('validations', function () {
 			jwkInterceptor.done();
 		});
 
-		it('should return an error when configuration is invalid', function *() {
+		it('should return an error when public key lookup fails', function *() {
 			jwkInterceptor = nock(ISSUER)
 				.get(JWKS_PATH)
 				.reply(404);
