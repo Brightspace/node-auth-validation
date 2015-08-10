@@ -31,8 +31,8 @@ util.inherits(NoAuthorizationProvidedError, Error);
 
 function PublicKeyLookupFailedError (inner) {
 	this.name = 'PublicKeyLookupFailedError';
-	this.status = 500;
-	this.message = 'An error occurred while looking up public keys';
+	this.status = 503;
+	this.message = 'An error occurred while looking up public keys. Check auth service configuration.';
 	this.inner = inner;
 
 	if (inner && inner.stack) {
