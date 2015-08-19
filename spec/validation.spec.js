@@ -71,7 +71,7 @@ describe('validations', function () {
 	it('should throw "BadToken" when expired token is sent', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'foo-bar-baz'
 			},
 			expiresInSeconds: -1
@@ -93,7 +93,7 @@ describe('validations', function () {
 	it('should throw "PublicKeyNotFound" when no key with matching "kid" is found on auth server', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'errmegerd'
 			}
 		});
@@ -114,7 +114,7 @@ describe('validations', function () {
 	it('should throw "PublicKeyLookupFailed" when there is an error requesting the jwks', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'errmegerd'
 			}
 		});
@@ -133,7 +133,7 @@ describe('validations', function () {
 	it('should NOT throw "PublicKeyLookupFailed" when there WAS error requesting the jwks', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'errmegerd'
 			}
 		});
@@ -154,7 +154,7 @@ describe('validations', function () {
 			},
 			signature = jwt.sign(payload, privateKeyPem, {
 				algorithm: 'RS256',
-				header: {
+				headers: {
 					kid: 'foo-bar-baz'
 				}
 			});
@@ -182,7 +182,7 @@ describe('validations', function () {
 			},
 			signature = jwt.sign(payload, privateKeyPem, {
 				algorithm: 'RS256',
-				header: {
+				headers: {
 					kid: 'foo-bar-baz'
 				}
 			});
