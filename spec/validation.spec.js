@@ -54,42 +54,24 @@ describe('validations', function () {
 	});
 
 	it('should throw "NoAuthorizationProvided" when there is no auth header', function *() {
-		try {
-			yield validator.fromHeaders({});
-		} catch (e) {
-			error = e;
-		}
-
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.NoAuthorizationProvided);
+		expect(validator.fromHeaders.bind(validator, {}))
+			.to.throw(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
 	it('should throw "NoAuthorizationProvided" when auth header is not a Bearer token', function *() {
-		try {
-			yield validator.fromHeaders({
-				authorization: 'Basic foobarbaz'
-			});
-		} catch (e) {
-			error = e;
-		}
-
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.NoAuthorizationProvided);
+		expect(validator.fromHeaders.bind(validator, { authorization: 'Basic foobarbaz' }))
+			.to.throw(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
 	it('should throw "BadToken" when invalid token is sent', function *() {
-		try {
-			yield validator.fromHeaders({
-				authorization: 'Bearer foobarbaz'
-			});
-		} catch (e) {
-			error = e;
-		}
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.BadToken);
+		yield expect(validator.fromHeaders({ authorization: 'Bearer foobarbaz' }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
 	});
 
 	it('should throw "BadToken" when expired token is sent', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'foo-bar-baz'
 			},
 			expiresInSeconds: -1
@@ -102,21 +84,16 @@ describe('validations', function () {
 				keys: [jwk]
 			});
 
-		try {
-			yield validator.fromHeaders({
-				authorization: `Bearer ${ token }`
-			});
-		} catch (e) {
-			error = e;
-		}
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.BadToken);
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
+
 		jwkInterceptor.done();
 	});
 
 	it('should throw "PublicKeyNotFound" when no key with matching "kid" is found on auth server', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'errmegerd'
 			}
 		});
@@ -128,21 +105,16 @@ describe('validations', function () {
 				keys: [jwk]
 			});
 
-		try {
-			yield validator.fromHeaders({
-				authorization: `Bearer ${ token }`
-			});
-		} catch (e) {
-			error = e;
-		}
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.PublicKeyNotFound);
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.PublicKeyNotFound);
+
 		jwkInterceptor.done();
 	});
 
 	it('should throw "PublicKeyLookupFailed" when there is an error requesting the jwks', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'errmegerd'
 			}
 		});
@@ -152,21 +124,16 @@ describe('validations', function () {
 			.get(JWKS_PATH)
 			.reply(404);
 
-		try {
-			yield validator.fromHeaders({
-				authorization: `Bearer ${ token }`
-			});
-		} catch (e) {
-			error = e;
-		}
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.PublicKeyLookupFailed);
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.PublicKeyLookupFailed);
+
 		jwkInterceptor.done();
 	});
 
 	it('should NOT throw "PublicKeyLookupFailed" when there WAS error requesting the jwks', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
-			header: {
+			headers: {
 				kid: 'errmegerd'
 			}
 		});
@@ -176,14 +143,9 @@ describe('validations', function () {
 			.get(JWKS_PATH)
 			.reply(404);
 
-		try {
-			yield validator.fromHeaders({
-				authorization: `Bearer ${ token }`
-			});
-		} catch (e) {
-			error = e;
-		}
-		expect(error).to.be.an.instanceof(AuthTokenValidator.errors.PublicKeyLookupFailed);
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.PublicKeyLookupFailed);
+
 		jwkInterceptor.done();
 
 		const
@@ -192,7 +154,7 @@ describe('validations', function () {
 			},
 			signature = jwt.sign(payload, privateKeyPem, {
 				algorithm: 'RS256',
-				header: {
+				headers: {
 					kid: 'foo-bar-baz'
 				}
 			});
@@ -209,6 +171,7 @@ describe('validations', function () {
 		});
 		expect(token).to.be.instanceof(BrightspaceAuthToken);
 		expect(token.source).to.equal(signature);
+
 		jwkInterceptor.done();
 	});
 
@@ -219,7 +182,7 @@ describe('validations', function () {
 			},
 			signature = jwt.sign(payload, privateKeyPem, {
 				algorithm: 'RS256',
-				header: {
+				headers: {
 					kid: 'foo-bar-baz'
 				}
 			});
@@ -236,6 +199,7 @@ describe('validations', function () {
 		});
 		expect(token).to.be.instanceof(BrightspaceAuthToken);
 		expect(token.source).to.equal(signature);
+
 		jwkInterceptor.done();
 	});
 
