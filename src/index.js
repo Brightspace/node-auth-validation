@@ -91,7 +91,9 @@ AuthTokenValidator.prototype.fromSignature = co.wrap(function *getValidatedAuthT
 	try {
 		payload = jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms });
 	} catch (err) {
-		if ('TokenExpiredError' === err.name) {
+		if ('TokenExpiredError' === err.name
+			|| 'JsonWebTokenError' === err.name
+		) {
 			throw new errors.BadToken(err.message);
 		}
 		throw err;
