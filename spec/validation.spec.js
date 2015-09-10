@@ -90,6 +90,29 @@ describe('validations', function () {
 		jwkInterceptor.done();
 	});
 
+	it('should throw "BadToken" for bad signature', function *() {
+		token = jwt.sign({}, privateKeyPem, {
+			algorithm: 'RS256',
+			headers: {
+				kid: 'foo-bar-baz'
+			}
+		});
+
+		token += 'mess-up-the-signature';
+
+		jwkInterceptor = nock(ISSUER)
+			.replyContentLength()
+			.get(JWKS_PATH)
+			.reply(200, {
+				keys: [jwk]
+			});
+
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${token}` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
+
+		jwkInterceptor.done();
+	});
+
 	it('should throw "PublicKeyNotFound" when no key with matching "kid" is found on auth server', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
