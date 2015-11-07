@@ -74,7 +74,7 @@ describe('validations', function () {
 			headers: {
 				kid: 'foo-bar-baz'
 			},
-			expiresInSeconds: -1
+			expiresIn: -1
 		});
 
 		jwkInterceptor = nock(ISSUER)
