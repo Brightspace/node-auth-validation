@@ -124,7 +124,7 @@ AuthTokenValidator.prototype._getPublicKey = promised(function getPublicKey (sig
 		const publicKey = this._keyCache.get(kid);
 
 		if (clock() < publicKey.expiry) {
-			return publicKey;
+			return Promise.resolve(publicKey);
 		}
 	}
 
