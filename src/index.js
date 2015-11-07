@@ -1,7 +1,7 @@
 'use strict';
 
 const
-	assert = require('better-assert'),
+	assert = require('assert'),
 	AuthToken = require('@d2l/brightspace-auth-token'),
 	jwkAllowedAlgorithms = require('jwk-allowed-algorithms'),
 	jwkToPem = require('jwk-to-pem'),
