@@ -54,13 +54,13 @@ describe('validations', function () {
 	});
 
 	it('should throw "NoAuthorizationProvided" when there is no auth header', function *() {
-		expect(validator.fromHeaders.bind(validator, {}))
-			.to.throw(AuthTokenValidator.errors.NoAuthorizationProvided);
+		expect(validator.fromHeaders({}))
+			.to.be.rejectedWith(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
 	it('should throw "NoAuthorizationProvided" when auth header is not a Bearer token', function *() {
-		expect(validator.fromHeaders.bind(validator, { authorization: 'Basic foobarbaz' }))
-			.to.throw(AuthTokenValidator.errors.NoAuthorizationProvided);
+		expect(validator.fromHeaders({ authorization: 'Basic foobarbaz' }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
 	it('should throw "BadToken" when invalid token is sent', function *() {

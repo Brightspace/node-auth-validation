@@ -3,14 +3,15 @@
 const
 	assert = require('better-assert'),
 	AuthToken = require('@d2l/brightspace-auth-token'),
-	co = require('co'),
 	jwkAllowedAlgorithms = require('jwk-allowed-algorithms'),
 	jwkToPem = require('jwk-to-pem'),
 	jws = require('jws'),
 	jwt = require('jsonwebtoken'),
 	request = require('superagent');
 
-const errors = require('./errors');
+const
+	errors = require('./errors'),
+	promised = require('./promised');
 
 const
 	DEFAULT_ISSUER = 'https://auth.brightspace.com/core',
@@ -65,7 +66,7 @@ function AuthTokenValidator (opts) {
 	this._keysUpdating = null;
 }
 
-AuthTokenValidator.prototype.fromHeaders = function getValidatedAuthTokenFromHeaders (headers) {
+AuthTokenValidator.prototype.fromHeaders = promised(function getValidatedAuthTokenFromHeaders (headers) {
 	assert('object' === typeof headers);
 
 	const authHeader = headers.authorization;
@@ -81,30 +82,31 @@ AuthTokenValidator.prototype.fromHeaders = function getValidatedAuthTokenFromHea
 	const signature = signatureMatch[1];
 
 	return this.fromSignature(signature);
-};
-
-AuthTokenValidator.prototype.fromSignature = co.wrap(function *getValidatedAuthTokenFromSignature (signature) {
-	assert('string' === typeof signature);
-
-	const key = yield this._getPublicKey(signature);
-	let payload;
-	try {
-		payload = jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms });
-	} catch (err) {
-		if ('TokenExpiredError' === err.name
-			|| 'JsonWebTokenError' === err.name
-		) {
-			throw new errors.BadToken(err.message);
-		}
-		throw err;
-	}
-
-	const token = new AuthToken(payload, signature);
-
-	return token;
 });
 
-AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) {
+AuthTokenValidator.prototype.fromSignature = promised(function getValidatedAuthTokenFromSignature (signature) {
+	assert('string' === typeof signature);
+
+	return this
+		._getPublicKey(signature)
+		.then(function (key) {
+			try {
+				return jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms });
+			} catch (err) {
+				if ('TokenExpiredError' === err.name
+					|| 'JsonWebTokenError' === err.name
+				) {
+					throw new errors.BadToken(err.message);
+				}
+				throw err;
+			}
+		})
+		.then(function (payload) {
+			return new AuthToken(payload, signature);
+		});
+});
+
+AuthTokenValidator.prototype._getPublicKey = promised(function getPublicKey (signature) {
 	assert('string' === typeof signature);
 
 	const decodedToken = jws.decode(signature);
@@ -121,24 +123,23 @@ AuthTokenValidator.prototype._getPublicKey = function *getPublicKey (signature) 
 	if (this._keyCache.has(kid)) {
 		const publicKey = this._keyCache.get(kid);
 
-		assert('object' === typeof publicKey);
-		assert('string' === typeof publicKey.pem);
-		assert('number' === typeof publicKey.expiry);
-		assert(Array.isArray(publicKey.allowedAlgorithms));
-
 		if (clock() < publicKey.expiry) {
 			return publicKey;
 		}
 	}
 
-	yield this._updatePublicKeys();
+	const self = this;
 
-	if (this._keyCache.has(kid)) {
-		return this._keyCache.get(kid);
-	}
+	return this
+		._updatePublicKeys()
+		.then(function () {
+			if (self._keyCache.has(kid)) {
+				return self._keyCache.get(kid);
+			}
 
-	throw new errors.PublicKeyNotFound(kid);
-};
+			throw new errors.PublicKeyNotFound(kid);
+		});
+});
 
 AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys () {
 	const self = this;
@@ -167,11 +168,14 @@ AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys () {
 	return this._keysUpdating;
 };
 
-AuthTokenValidator.prototype.validateConfiguration = co.wrap(function *() {
-	yield this._updatePublicKeys();
-
+function returnTrue() {
 	return true;
-});
+}
+AuthTokenValidator.prototype.validateConfiguration = function () {
+	return this
+		._updatePublicKeys()
+		.then(returnTrue);
+};
 
 module.exports = AuthTokenValidator;
 module.exports.errors = errors;

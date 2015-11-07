@@ -27,7 +27,6 @@
   "dependencies": {
     "@d2l/brightspace-auth-token": "^3.0.1",
     "better-assert": "^1.0.2",
-    "co": "^4.4.0",
     "jsonwebtoken": "^5.0.0",
     "jwk-allowed-algorithms": "^1.0.0",
     "jwk-to-pem": "^1.0.2",
