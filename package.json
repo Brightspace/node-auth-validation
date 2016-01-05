@@ -12,7 +12,7 @@
     "test": "npm run check-style && mocha -r co-mocha -R spec spec"
   },
   "author": "D2L Corporation",
-  "license": "",
+  "license": "Apache-2.0",
   "devDependencies": {
     "chai": "^2.1.1",
     "chai-as-promised": "^5.1.0",
