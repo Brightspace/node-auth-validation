@@ -4,5 +4,3 @@ node_js:
 - iojs
 before_install:
   - mv .npmrc.ro-travisci-npm ~/.npmrc
-after_success:
-- ./travis-deploy.sh
