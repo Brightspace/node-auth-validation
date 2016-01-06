@@ -5,7 +5,7 @@
 process.env.AUTH_SERVICE_URI = 'http://auth-bar-baz.test.d2l/baz';
 
 const
-	BrightspaceAuthToken = require('@d2l/brightspace-auth-token'),
+	BrightspaceAuthToken = require('brightspace-auth-token'),
 	chai = require('chai'),
 	chaiAsPromised = require('chai-as-promised'),
 	expect = chai.expect,

@@ -9,7 +9,7 @@ const validator = new (require('brightspace-auth-validation'))();
 function *authMiddleware (next) {
 	const auth = yield validator.fromHeaders(this.headers);
 
-	this.auth = auth; // @d2l/BrightspaceAuthToken instance
+	this.auth = auth; // BrightspaceAuthToken instance
 
 	yield* next;
 };
