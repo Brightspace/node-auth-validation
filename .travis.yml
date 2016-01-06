@@ -2,8 +2,6 @@ sudo: false
 language: node_js
 node_js:
 - iojs
-before_install:
-- mv .npmrc.ro-travisci-npm ~/.npmrc
 deploy:
   provider: npm
   email: d2ltravisdeploy@d2l.com
