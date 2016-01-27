@@ -91,7 +91,7 @@ AuthTokenValidator.prototype.fromSignature = promised(function getValidatedAuthT
 		._getPublicKey(signature)
 		.then(function (key) {
 			try {
-				return jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms });
+				return jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms, ignoreNotBefore: true });
 			} catch (err) {
 				if ('TokenExpiredError' === err.name
 					|| 'JsonWebTokenError' === err.name
