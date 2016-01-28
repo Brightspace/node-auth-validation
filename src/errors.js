@@ -2,7 +2,7 @@
 
 const util = require('util');
 
-function BadJsonWebTokenError (message) {
+function BadJsonWebTokenError(message) {
 	this.name = 'BadJsonWebTokenError';
 	this.status = 401;
 	this.message = message;
@@ -11,7 +11,7 @@ function BadJsonWebTokenError (message) {
 }
 util.inherits(BadJsonWebTokenError, Error);
 
-function PublicKeyNotFoundError (kid) {
+function PublicKeyNotFoundError(kid) {
 	this.name = 'PublicKeyNotFoundError';
 	this.status = 403;
 	this.message = `Public key "${ kid }" not found`;
@@ -20,7 +20,7 @@ function PublicKeyNotFoundError (kid) {
 }
 util.inherits(PublicKeyNotFoundError, Error);
 
-function NoAuthorizationProvidedError () {
+function NoAuthorizationProvidedError() {
 	this.name = 'NoAuthorizationProvidedError';
 	this.status = 401;
 	this.message = 'An authorization method wasn\'t provided';
@@ -29,7 +29,7 @@ function NoAuthorizationProvidedError () {
 }
 util.inherits(NoAuthorizationProvidedError, Error);
 
-function PublicKeyLookupFailedError (inner) {
+function PublicKeyLookupFailedError(inner) {
 	this.name = 'PublicKeyLookupFailedError';
 	this.status = 503;
 	this.message = 'An error occurred while looking up public keys. Check auth service configuration.';

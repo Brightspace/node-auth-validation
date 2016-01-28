@@ -8,8 +8,9 @@
   },
   "main": "src/index.js",
   "scripts": {
-    "check-style": "jscs . && jshint .",
-    "test": "npm run check-style && mocha -r co-mocha -R spec spec"
+    "check-style": "eslint .",
+    "pretest": "npm run check-style",
+    "test": "mocha -r co-mocha -R spec spec"
   },
   "author": "D2L Corporation",
   "license": "Apache-2.0",
@@ -17,8 +18,9 @@
     "chai": "^2.1.1",
     "chai-as-promised": "^5.1.0",
     "co-mocha": "^1.1.0",
-    "jscs": "^1.11.3",
-    "jshint": "^2.6.3",
+    "eslint": "^1.10.3",
+    "eslint-config-brightspace": "^0.1.0",
+    "eslint-plugin-react": "^3.16.1",
     "mocha": "^2.1.0",
     "nock": "^1.0.0",
     "node-rsa": "^0.2.22",
