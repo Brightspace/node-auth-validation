@@ -4,15 +4,26 @@
 ## Example
 
 ```js
+'use strict';
+
+const http = require('http');
 const validator = new (require('brightspace-auth-validation'))();
 
-function *authMiddleware (next) {
-	const auth = yield validator.fromHeaders(this.headers);
-
-	this.auth = auth; // BrightspaceAuthToken instance
-
-	yield* next;
-};
+const server = http
+	.createServer((req, res) => {
+		validator
+			.fromHeaders(req.headers)
+			.then(token => {
+				// token is a BrightspaceAuthToken instance
+				res.statusCode = 201;
+				res.end('Hi!\n');
+			}, e => {
+				console.error(e);
+				res.statusCode = e.status || 403;
+				res.end('Sorry, can\'t let you in!\n');
+			});
+	})
+	.listen(3000);
 ```
 
 ## Testing
