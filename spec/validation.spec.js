@@ -22,9 +22,8 @@ const AuthTokenValidator = require('../');
 
 chai.use(chaiAsPromised);
 
-describe('validations', function () {
+describe('validations', function() {
 	let
-		error,
 		jwkInterceptor,
 		token,
 		validator;
@@ -33,13 +32,12 @@ describe('validations', function () {
 		privateKeyPem = new NodeRSA({ b: 512 }).exportKey('pkcs1-private-pem') + '\n',
 		jwk = rsaPemToJwk(privateKeyPem, { kid: 'foo-bar-baz', use: 'sig' }, 'public');
 
-	before(function (done) {
+	before(function(done) {
 		nock.enableNetConnect();
 		done();
 	});
 
-	beforeEach(function (done) {
-		error = undefined;
+	beforeEach(function(done) {
 		jwkInterceptor = undefined;
 		token = undefined;
 		validator = new AuthTokenValidator({
@@ -48,7 +46,7 @@ describe('validations', function () {
 		done();
 	});
 
-	after(function (done) {
+	after(function(done) {
 		nock.cleanAll();
 		done();
 	});
@@ -226,7 +224,7 @@ describe('validations', function () {
 		jwkInterceptor.done();
 	});
 
-	describe('validateConfiguration', function () {
+	describe('validateConfiguration', function() {
 		it('should return true when public keys can be updated', function *() {
 			jwkInterceptor = nock(ISSUER)
 				.get(JWKS_PATH)

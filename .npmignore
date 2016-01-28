@@ -5,6 +5,8 @@ node_modules
 *.tgz
 
 .editorconfig
+.eslintignore
+.eslintrc
 
 .travis.yml
 .npmrc*

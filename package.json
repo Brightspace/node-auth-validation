@@ -8,6 +8,8 @@
   },
   "main": "src/index.js",
   "scripts": {
+    "check-style": "eslint .",
+    "pretest": "npm run check-style",
     "test": "mocha -r co-mocha -R spec spec"
   },
   "author": "D2L Corporation",
@@ -16,6 +18,9 @@
     "chai": "^2.1.1",
     "chai-as-promised": "^5.1.0",
     "co-mocha": "^1.1.0",
+    "eslint": "^1.10.3",
+    "eslint-config-brightspace": "^0.1.0",
+    "eslint-plugin-react": "^3.16.1",
     "mocha": "^2.1.0",
     "nock": "^1.0.0",
     "node-rsa": "^0.2.22",

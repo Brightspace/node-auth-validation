@@ -18,11 +18,11 @@ const
 	DEFAULT_MAX_KEY_AGE = 5 * 60 * 60,
 	JWKS_PATH = '/.well-known/jwks';
 
-function clock () {
+function clock() {
 	return Math.round(Date.now() / 1000);
 }
 
-function processJwks (jwks, knownPublicKeys, maxKeyAge) {
+function processJwks(jwks, knownPublicKeys, maxKeyAge) {
 	assert('object' === typeof jwks);
 	assert(Array.isArray(jwks.keys));
 	assert(knownPublicKeys instanceof Map);
@@ -32,7 +32,7 @@ function processJwks (jwks, knownPublicKeys, maxKeyAge) {
 		currentPublicKeys = new Map(),
 		expiry = clock() + maxKeyAge;
 
-	for (let jwk of jwks.keys) {
+	for (const jwk of jwks.keys) {
 		assert('object' === typeof jwk);
 		assert('string' === typeof jwk.kid);
 
@@ -51,7 +51,7 @@ function processJwks (jwks, knownPublicKeys, maxKeyAge) {
 	return currentPublicKeys;
 }
 
-function AuthTokenValidator (opts) {
+function AuthTokenValidator(opts) {
 	if (!(this instanceof AuthTokenValidator)) {
 		return new AuthTokenValidator(opts);
 	}
@@ -66,7 +66,7 @@ function AuthTokenValidator (opts) {
 	this._keysUpdating = null;
 }
 
-AuthTokenValidator.prototype.fromHeaders = promised(function getValidatedAuthTokenFromHeaders (headers) {
+AuthTokenValidator.prototype.fromHeaders = promised(/* @this */function getValidatedAuthTokenFromHeaders(headers) {
 	assert('object' === typeof headers);
 
 	const authHeader = headers.authorization;
@@ -84,12 +84,12 @@ AuthTokenValidator.prototype.fromHeaders = promised(function getValidatedAuthTok
 	return this.fromSignature(signature);
 });
 
-AuthTokenValidator.prototype.fromSignature = promised(function getValidatedAuthTokenFromSignature (signature) {
+AuthTokenValidator.prototype.fromSignature = promised(/* @this */function getValidatedAuthTokenFromSignature(signature) {
 	assert('string' === typeof signature);
 
 	return this
 		._getPublicKey(signature)
-		.then(function (key) {
+		.then(function(key) {
 			try {
 				return jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms, ignoreNotBefore: true });
 			} catch (err) {
@@ -101,12 +101,12 @@ AuthTokenValidator.prototype.fromSignature = promised(function getValidatedAuthT
 				throw err;
 			}
 		})
-		.then(function (payload) {
+		.then(function(payload) {
 			return new AuthToken(payload, signature);
 		});
 });
 
-AuthTokenValidator.prototype._getPublicKey = promised(function getPublicKey (signature) {
+AuthTokenValidator.prototype._getPublicKey = promised(/* @this */function getPublicKey(signature) {
 	assert('string' === typeof signature);
 
 	const decodedToken = jws.decode(signature);
@@ -132,7 +132,7 @@ AuthTokenValidator.prototype._getPublicKey = promised(function getPublicKey (sig
 
 	return this
 		._updatePublicKeys()
-		.then(function () {
+		.then(function() {
 			if (self._keyCache.has(kid)) {
 				return self._keyCache.get(kid);
 			}
@@ -141,14 +141,14 @@ AuthTokenValidator.prototype._getPublicKey = promised(function getPublicKey (sig
 		});
 });
 
-AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys () {
+AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys() {
 	const self = this;
 
 	if (!this._keysUpdating) {
-		this._keysUpdating = new Promise(function (resolve, reject) {
+		this._keysUpdating = new Promise(function(resolve, reject) {
 			request
 				.get(self._jwksUri)
-				.end(function (err, res) {
+				.end(function(err, res) {
 					if (err) {
 						reject(new errors.PublicKeyLookupFailed(err));
 						return;
@@ -156,10 +156,10 @@ AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys () {
 
 					resolve(res.body);
 				});
-		}).then(function (jwks) {
+		}).then(function(jwks) {
 			self._keyCache = processJwks(jwks, self._keyCache, self._maxKeyAge);
 			self._keysUpdating = null;
-		}).catch(function (e) {
+		}).catch(function(e) {
 			self._keysUpdating = null;
 			throw e;
 		});
@@ -171,7 +171,7 @@ AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys () {
 function returnTrue() {
 	return true;
 }
-AuthTokenValidator.prototype.validateConfiguration = function () {
+AuthTokenValidator.prototype.validateConfiguration = function() {
 	return this
 		._updatePublicKeys()
 		.then(returnTrue);
