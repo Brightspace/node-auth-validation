@@ -38,11 +38,6 @@ npm test
 
 ### Code Style
 
-This repository is configured with [EditorConfig][EditorConfig], [jscs][jscs]
-and [JSHint][JSHint] rules. See the [docs.dev code style article][code style]
-for information on installing editor extensions.
+This repository is configured with [EditorConfig][EditorConfig] rules.
 
 [EditorConfig]: http://editorconfig.org/
-[jscs]: http://jscs.info/
-[JSHint]: http://jshint.com/
-[code style]: http://docs.dev.d2l/index.php/JavaScript_Code_Style_(Personal_Learning)
