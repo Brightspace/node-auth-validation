@@ -6,7 +6,6 @@ const
 	jwkAllowedAlgorithms = require('jwk-allowed-algorithms'),
 	jwkToPem = require('jwk-to-pem'),
 	jws = require('jws'),
-	jwt = require('jsonwebtoken'),
 	request = require('superagent');
 
 const
@@ -87,36 +86,70 @@ AuthTokenValidator.prototype.fromHeaders = promised(/* @this */function getValid
 AuthTokenValidator.prototype.fromSignature = promised(/* @this */function getValidatedAuthTokenFromSignature(signature) {
 	assert('string' === typeof signature);
 
+	const token = decodeSignature(signature);
+	const claims = validateClaims(token);
+
 	return this
-		._getPublicKey(signature)
-		.then(function(key) {
-			try {
-				return jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms, ignoreNotBefore: true });
-			} catch (err) {
-				if ('TokenExpiredError' === err.name
-					|| 'JsonWebTokenError' === err.name
-				) {
-					throw new errors.BadToken(err.message);
-				}
-				throw err;
-			}
+		._getPublicKey(token)
+		.then(function verifyWithKey(publicKey) {
+			return verifySignature(signature, token, publicKey);
 		})
-		.then(function(payload) {
-			return new AuthToken(payload, signature);
+		.then(function returnToken() {
+			return new AuthToken(claims, signature);
 		});
 });
 
-AuthTokenValidator.prototype._getPublicKey = promised(/* @this */function getPublicKey(signature) {
+function decodeSignature(signature) {
 	assert('string' === typeof signature);
 
-	const decodedToken = jws.decode(signature);
-	if (!decodedToken) {
-		throw new errors.BadToken('Not a valid signature');
+	let decodedToken = null;
+	try {
+		decodedToken = jws.decode(signature);
+	} catch (e) {
+		throw new errors.BadToken('Not a valid JWT');
 	}
 
-	assert('object' === typeof decodedToken.header);
+	if (!decodedToken) {
+		throw new errors.BadToken('Not a valid JWT');
+	}
 
-	const kid = decodedToken.header.kid;
+	const header = decodedToken.header;
+
+	if ('string' !== typeof header.kid) {
+		throw new errors.BadToken('Missing "kid" header');
+	}
+
+	if ('string' !== typeof header.alg) {
+		throw new errors.BadToken('Missing "alg" header');
+	}
+
+	return decodedToken;
+}
+
+function validateClaims(token) {
+	const claims = token.payload;
+	const now = clock();
+
+	if ('undefined' !== typeof claims.exp) {
+		const exp = claims.exp;
+		if ('number' !== typeof exp) {
+			throw new errors.BadToken('Invalid "exp" claim');
+		}
+
+		const diff = now - exp;
+		if (diff >= 0) {
+			throw new errors.BadToken(`Token expired (${diff} seconds)`);
+		}
+	}
+
+	return claims;
+}
+
+AuthTokenValidator.prototype._getPublicKey = function getPublicKey(token) {
+	assert('object' === typeof token);
+	assert('object' === typeof token.header);
+
+	const kid = token.header.kid;
 
 	assert('string' === typeof kid);
 
@@ -139,7 +172,7 @@ AuthTokenValidator.prototype._getPublicKey = promised(/* @this */function getPub
 
 			throw new errors.PublicKeyNotFound(kid);
 		});
-});
+};
 
 AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys() {
 	const self = this;
@@ -167,6 +200,32 @@ AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys() {
 
 	return this._keysUpdating;
 };
+
+function verifySignature(signature, token, publicKey) {
+	const alg = matchAlgorithm(publicKey, token);
+
+	let verified = false;
+	try {
+		verified = jws.verify(signature, alg, publicKey.pem);
+	} catch (e) {
+		throw new errors.BadToken('Error during signature verification');
+	}
+
+	if (!verified) {
+		throw new errors.BadToken('Invalid signature');
+	}
+}
+
+function matchAlgorithm(publicKey, token) {
+	const requestedAlgorithm = token.header.alg;
+	const allowedAlgorithms = publicKey.allowedAlgorithms;
+
+	if (-1 === allowedAlgorithms.indexOf(requestedAlgorithm)) {
+		throw new errors.BadToken('Token listed bad algorithm for key, "' + requestedAlgorithm + '"');
+	}
+
+	return requestedAlgorithm;
+}
 
 function returnTrue() {
 	return true;

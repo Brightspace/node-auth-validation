@@ -21,6 +21,7 @@
     "eslint": "^1.10.3",
     "eslint-config-brightspace": "^0.1.0",
     "eslint-plugin-react": "^3.16.1",
+    "jsonwebtoken": "^5.5.4",
     "mocha": "^2.1.0",
     "nock": "^1.0.0",
     "node-rsa": "^0.2.22",
@@ -28,7 +29,6 @@
   },
   "dependencies": {
     "brightspace-auth-token": "^3.1.1",
-    "jsonwebtoken": "^5.0.0",
     "jwk-allowed-algorithms": "^1.0.0",
     "jwk-to-pem": "^1.0.2",
     "jws": "^3.0.0",

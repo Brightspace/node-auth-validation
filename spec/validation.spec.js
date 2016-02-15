@@ -75,17 +75,8 @@ describe('validations', function() {
 			expiresIn: -1
 		});
 
-		jwkInterceptor = nock(ISSUER)
-			.replyContentLength()
-			.get(JWKS_PATH)
-			.reply(200, {
-				keys: [jwk]
-			});
-
 		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
 			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
-
-		jwkInterceptor.done();
 	});
 
 	it('should throw "BadToken" for bad signature', function *() {
