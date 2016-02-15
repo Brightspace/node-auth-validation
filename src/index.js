@@ -154,6 +154,19 @@ AuthTokenValidator.prototype._validateClaims = function validateClaims(token) {
 		}
 	}
 
+	if ('undefined' !== typeof claims.nbf) {
+		const nbf = claims.nbf;
+		if ('number' !== typeof nbf) {
+			throw new errors.BadToken('Invalid "nbf" claim');
+		}
+
+		const diff = now - nbf;
+
+		if (diff < -1 * this._maxClockSkew) {
+			throw new errors.BadToken(`Token not yet valid (${diff} seconds)`);
+		}
+	}
+
 	return claims;
 };
 

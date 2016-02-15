@@ -86,6 +86,19 @@ describe('validations', function() {
 			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
 	});
 
+	it('should throw "BadToken" when not-yet-valid token is sent (outside of skew)', function *() {
+		token = jwt.sign({}, privateKeyPem, {
+			algorithm: 'RS256',
+			headers: {
+				kid: 'foo-bar-baz'
+			},
+			notBefore: maxClockSkew + 1
+		});
+
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
+	});
+
 	it('should throw "BadToken" for bad signature', function *() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
@@ -233,6 +246,35 @@ describe('validations', function() {
 					kid: 'foo-bar-baz'
 				},
 				expiresIn: -1 * maxClockSkew + 1
+			});
+
+		jwkInterceptor = nock(ISSUER)
+			.replyContentLength()
+			.get(JWKS_PATH)
+			.reply(200, {
+				keys: [jwk]
+			});
+
+		token = yield validator.fromHeaders({
+			authorization: `Bearer ${ signature }`
+		});
+		expect(token).to.be.instanceof(BrightspaceAuthToken);
+		expect(token.source).to.equal(signature);
+
+		jwkInterceptor.done();
+	});
+
+	it('should return BrightspaceAuthToken when matching "kid" is found on auth server, signature is valid and nbf is within clock skew', function *() {
+		const
+			payload = {
+				key: 'val'
+			},
+			signature = jwt.sign(payload, privateKeyPem, {
+				algorithm: 'RS256',
+				headers: {
+					kid: 'foo-bar-baz'
+				},
+				notBefore: maxClockSkew
 			});
 
 		jwkInterceptor = nock(ISSUER)
