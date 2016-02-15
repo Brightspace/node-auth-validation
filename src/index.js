@@ -14,6 +14,7 @@ const
 
 const
 	DEFAULT_ISSUER = 'https://auth.brightspace.com/core',
+	DEFAULT_MAX_CLOCK_SKEW = 5 * 60,
 	DEFAULT_MAX_KEY_AGE = 5 * 60 * 60,
 	JWKS_PATH = '/.well-known/jwks';
 
@@ -57,6 +58,17 @@ function AuthTokenValidator(opts) {
 
 	opts = opts || {};
 
+	this._maxClockSkew = DEFAULT_MAX_CLOCK_SKEW;
+	const maxClockSkewOpt = opts.maxClockSkew;
+	if ('undefined' !== typeof maxClockSkewOpt) {
+		if ('number' !== typeof maxClockSkewOpt || maxClockSkewOpt < 0) {
+			throw new TypeError(
+				`Expected "opts.maxClockSkew" to be a non-negative Number. Got "${ maxClockSkewOpt }" (${typeof maxClockSkewOpt}).`
+			);
+		}
+		this._maxClockSkew = maxClockSkewOpt;
+	}
+
 	const issuer = 'string' === typeof opts.issuer ? opts.issuer.replace(/\/+$/g, '') : DEFAULT_ISSUER;
 
 	this._jwksUri = `${ issuer }${ JWKS_PATH }`;
@@ -87,7 +99,7 @@ AuthTokenValidator.prototype.fromSignature = promised(/* @this */function getVal
 	assert('string' === typeof signature);
 
 	const token = decodeSignature(signature);
-	const claims = validateClaims(token);
+	const claims = this._validateClaims(token);
 
 	return this
 		._getPublicKey(token)
@@ -126,7 +138,7 @@ function decodeSignature(signature) {
 	return decodedToken;
 }
 
-function validateClaims(token) {
+AuthTokenValidator.prototype._validateClaims = function validateClaims(token) {
 	const claims = token.payload;
 	const now = clock();
 
@@ -137,13 +149,13 @@ function validateClaims(token) {
 		}
 
 		const diff = now - exp;
-		if (diff >= 0) {
+		if (diff >= this._maxClockSkew) {
 			throw new errors.BadToken(`Token expired (${diff} seconds)`);
 		}
 	}
 
 	return claims;
-}
+};
 
 AuthTokenValidator.prototype._getPublicKey = function getPublicKey(token) {
 	assert('object' === typeof token);
