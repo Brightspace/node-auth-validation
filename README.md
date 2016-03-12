@@ -40,6 +40,11 @@ You may optionally specify the auth instance to connect to.
 ...new AuthTokenValidator({ issuer: 'https://auth.brightspace.com/core' });
 ```
 
+##### Option : maxClockSkew `Number` _(300)_
+
+You may optionally specify the allowed clock skew, in seconds, when validating
+time-based claims.
+
 ##### Option : maxKeyAge `Number` _(18000)_
 
 _Deprecated soon_

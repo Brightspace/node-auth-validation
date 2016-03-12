@@ -6,7 +6,6 @@ const
 	jwkAllowedAlgorithms = require('jwk-allowed-algorithms'),
 	jwkToPem = require('jwk-to-pem'),
 	jws = require('jws'),
-	jwt = require('jsonwebtoken'),
 	request = require('superagent');
 
 const
@@ -15,6 +14,7 @@ const
 
 const
 	DEFAULT_ISSUER = 'https://auth.brightspace.com/core',
+	DEFAULT_MAX_CLOCK_SKEW = 5 * 60,
 	DEFAULT_MAX_KEY_AGE = 5 * 60 * 60,
 	JWKS_PATH = '/.well-known/jwks';
 
@@ -58,6 +58,17 @@ function AuthTokenValidator(opts) {
 
 	opts = opts || {};
 
+	this._maxClockSkew = DEFAULT_MAX_CLOCK_SKEW;
+	const maxClockSkewOpt = opts.maxClockSkew;
+	if ('undefined' !== typeof maxClockSkewOpt) {
+		if ('number' !== typeof maxClockSkewOpt || maxClockSkewOpt < 0) {
+			throw new TypeError(
+				`Expected "opts.maxClockSkew" to be a non-negative Number. Got "${ maxClockSkewOpt }" (${typeof maxClockSkewOpt}).`
+			);
+		}
+		this._maxClockSkew = maxClockSkewOpt;
+	}
+
 	const issuer = 'string' === typeof opts.issuer ? opts.issuer.replace(/\/+$/g, '') : DEFAULT_ISSUER;
 
 	this._jwksUri = `${ issuer }${ JWKS_PATH }`;
@@ -87,36 +98,83 @@ AuthTokenValidator.prototype.fromHeaders = promised(/* @this */function getValid
 AuthTokenValidator.prototype.fromSignature = promised(/* @this */function getValidatedAuthTokenFromSignature(signature) {
 	assert('string' === typeof signature);
 
+	const token = decodeSignature(signature);
+	const claims = this._validateClaims(token);
+
 	return this
-		._getPublicKey(signature)
-		.then(function(key) {
-			try {
-				return jwt.verify(signature, key.pem, { algorithms: key.allowedAlgorithms, ignoreNotBefore: true });
-			} catch (err) {
-				if ('TokenExpiredError' === err.name
-					|| 'JsonWebTokenError' === err.name
-				) {
-					throw new errors.BadToken(err.message);
-				}
-				throw err;
-			}
+		._getPublicKey(token)
+		.then(function verifyWithKey(publicKey) {
+			return verifySignature(signature, token, publicKey);
 		})
-		.then(function(payload) {
-			return new AuthToken(payload, signature);
+		.then(function returnToken() {
+			return new AuthToken(claims, signature);
 		});
 });
 
-AuthTokenValidator.prototype._getPublicKey = promised(/* @this */function getPublicKey(signature) {
+function decodeSignature(signature) {
 	assert('string' === typeof signature);
 
-	const decodedToken = jws.decode(signature);
-	if (!decodedToken) {
-		throw new errors.BadToken('Not a valid signature');
+	let decodedToken = null;
+	try {
+		decodedToken = jws.decode(signature);
+	} catch (e) {
+		throw new errors.BadToken('Not a valid JWT');
 	}
 
-	assert('object' === typeof decodedToken.header);
+	if (!decodedToken) {
+		throw new errors.BadToken('Not a valid JWT');
+	}
 
-	const kid = decodedToken.header.kid;
+	const header = decodedToken.header;
+
+	if ('string' !== typeof header.kid) {
+		throw new errors.BadToken('Missing "kid" header');
+	}
+
+	if ('string' !== typeof header.alg) {
+		throw new errors.BadToken('Missing "alg" header');
+	}
+
+	return decodedToken;
+}
+
+AuthTokenValidator.prototype._validateClaims = function validateClaims(token) {
+	const claims = token.payload;
+	const now = clock();
+
+	if ('undefined' !== typeof claims.exp) {
+		const exp = claims.exp;
+		if ('number' !== typeof exp) {
+			throw new errors.BadToken('Invalid "exp" claim');
+		}
+
+		const diff = now - exp;
+		if (diff >= this._maxClockSkew) {
+			throw new errors.BadToken(`Token expired (${diff} seconds)`);
+		}
+	}
+
+	if ('undefined' !== typeof claims.nbf) {
+		const nbf = claims.nbf;
+		if ('number' !== typeof nbf) {
+			throw new errors.BadToken('Invalid "nbf" claim');
+		}
+
+		const diff = now - nbf;
+
+		if (diff < -1 * this._maxClockSkew) {
+			throw new errors.BadToken(`Token not yet valid (${diff} seconds)`);
+		}
+	}
+
+	return claims;
+};
+
+AuthTokenValidator.prototype._getPublicKey = function getPublicKey(token) {
+	assert('object' === typeof token);
+	assert('object' === typeof token.header);
+
+	const kid = token.header.kid;
 
 	assert('string' === typeof kid);
 
@@ -139,7 +197,7 @@ AuthTokenValidator.prototype._getPublicKey = promised(/* @this */function getPub
 
 			throw new errors.PublicKeyNotFound(kid);
 		});
-});
+};
 
 AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys() {
 	const self = this;
@@ -167,6 +225,32 @@ AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys() {
 
 	return this._keysUpdating;
 };
+
+function verifySignature(signature, token, publicKey) {
+	const alg = matchAlgorithm(publicKey, token);
+
+	let verified = false;
+	try {
+		verified = jws.verify(signature, alg, publicKey.pem);
+	} catch (e) {
+		throw new errors.BadToken('Error during signature verification');
+	}
+
+	if (!verified) {
+		throw new errors.BadToken('Invalid signature');
+	}
+}
+
+function matchAlgorithm(publicKey, token) {
+	const requestedAlgorithm = token.header.alg;
+	const allowedAlgorithms = publicKey.allowedAlgorithms;
+
+	if (-1 === allowedAlgorithms.indexOf(requestedAlgorithm)) {
+		throw new errors.BadToken('Token listed bad algorithm for key, "' + requestedAlgorithm + '"');
+	}
+
+	return requestedAlgorithm;
+}
 
 function returnTrue() {
 	return true;

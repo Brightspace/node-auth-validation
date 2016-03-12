@@ -12,7 +12,8 @@ const
 	jwt = require('jsonwebtoken'),
 	nock = require('nock'),
 	NodeRSA = require('node-rsa'),
-	rsaPemToJwk = require('rsa-pem-to-jwk');
+	rsaPemToJwk = require('rsa-pem-to-jwk'),
+	sinon = require('sinon');
 
 const
 	ISSUER = process.env.AUTH_SERVICE_URI,
@@ -24,6 +25,7 @@ chai.use(chaiAsPromised);
 
 describe('validations', function() {
 	let
+		clock,
 		jwkInterceptor,
 		token,
 		validator;
@@ -32,7 +34,10 @@ describe('validations', function() {
 		privateKeyPem = new NodeRSA({ b: 512 }).exportKey('pkcs1-private-pem') + '\n',
 		jwk = rsaPemToJwk(privateKeyPem, { kid: 'foo-bar-baz', use: 'sig' }, 'public');
 
+	const maxClockSkew = 10;
+
 	before(function(done) {
+		clock = sinon.useFakeTimers();
 		nock.enableNetConnect();
 		done();
 	});
@@ -41,12 +46,14 @@ describe('validations', function() {
 		jwkInterceptor = undefined;
 		token = undefined;
 		validator = new AuthTokenValidator({
-			issuer: ISSUER
+			issuer: ISSUER,
+			maxClockSkew: 10
 		});
 		done();
 	});
 
 	after(function(done) {
+		clock.restore();
 		nock.cleanAll();
 		done();
 	});
@@ -72,20 +79,24 @@ describe('validations', function() {
 			headers: {
 				kid: 'foo-bar-baz'
 			},
-			expiresIn: -1
+			expiresIn: -1 * (maxClockSkew)
 		});
-
-		jwkInterceptor = nock(ISSUER)
-			.replyContentLength()
-			.get(JWKS_PATH)
-			.reply(200, {
-				keys: [jwk]
-			});
 
 		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
 			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
+	});
 
-		jwkInterceptor.done();
+	it('should throw "BadToken" when not-yet-valid token is sent (outside of skew)', function *() {
+		token = jwt.sign({}, privateKeyPem, {
+			algorithm: 'RS256',
+			headers: {
+				kid: 'foo-bar-baz'
+			},
+			notBefore: maxClockSkew + 1
+		});
+
+		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
 	});
 
 	it('should throw "BadToken" for bad signature', function *() {
@@ -206,6 +217,64 @@ describe('validations', function() {
 				headers: {
 					kid: 'foo-bar-baz'
 				}
+			});
+
+		jwkInterceptor = nock(ISSUER)
+			.replyContentLength()
+			.get(JWKS_PATH)
+			.reply(200, {
+				keys: [jwk]
+			});
+
+		token = yield validator.fromHeaders({
+			authorization: `Bearer ${ signature }`
+		});
+		expect(token).to.be.instanceof(BrightspaceAuthToken);
+		expect(token.source).to.equal(signature);
+
+		jwkInterceptor.done();
+	});
+
+	it('should return BrightspaceAuthToken when matching "kid" is found on auth server, signature is valid, and expiry is within clock skew', function *() {
+		const
+			payload = {
+				key: 'val'
+			},
+			signature = jwt.sign(payload, privateKeyPem, {
+				algorithm: 'RS256',
+				headers: {
+					kid: 'foo-bar-baz'
+				},
+				expiresIn: -1 * maxClockSkew + 1
+			});
+
+		jwkInterceptor = nock(ISSUER)
+			.replyContentLength()
+			.get(JWKS_PATH)
+			.reply(200, {
+				keys: [jwk]
+			});
+
+		token = yield validator.fromHeaders({
+			authorization: `Bearer ${ signature }`
+		});
+		expect(token).to.be.instanceof(BrightspaceAuthToken);
+		expect(token.source).to.equal(signature);
+
+		jwkInterceptor.done();
+	});
+
+	it('should return BrightspaceAuthToken when matching "kid" is found on auth server, signature is valid and nbf is within clock skew', function *() {
+		const
+			payload = {
+				key: 'val'
+			},
+			signature = jwt.sign(payload, privateKeyPem, {
+				algorithm: 'RS256',
+				headers: {
+					kid: 'foo-bar-baz'
+				},
+				notBefore: maxClockSkew
 			});
 
 		jwkInterceptor = nock(ISSUER)
