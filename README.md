@@ -1,5 +1,5 @@
 # brightspace-auth-validation
-[![Build Status](https://travis-ci.org/Brightspace/node-auth-validation.svg?branch=master)](https://travis-ci.org/Brightspace/node-auth-validation.svg?branch=master)
+[![Build Status](https://travis-ci.org/Brightspace/node-auth-validation.svg?branch=master)](https://travis-ci.org/Brightspace/node-auth-validation)
 
 ## Usage
 
