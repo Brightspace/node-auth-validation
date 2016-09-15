@@ -75,6 +75,7 @@ function AuthTokenValidator(opts) {
 	this._maxKeyAge = 'number' === typeof opts.maxKeyAge ? opts.maxKeyAge : DEFAULT_MAX_KEY_AGE;
 	this._keyCache = new Map();
 	this._keysUpdating = null;
+	this._cert = opts.cert;
 }
 
 AuthTokenValidator.prototype.fromHeaders = promised(/* @this */function getValidatedAuthTokenFromHeaders(headers) {
@@ -206,6 +207,7 @@ AuthTokenValidator.prototype._updatePublicKeys = function updatePublicKeys() {
 		this._keysUpdating = new Promise(function(resolve, reject) {
 			request
 				.get(self._jwksUri)
+				.ca(self._cert)
 				.end(function(err, res) {
 					if (err) {
 						reject(new errors.PublicKeyLookupFailed(err));
