@@ -85,7 +85,7 @@ AuthTokenValidator.prototype.fromHeaders = promised(/* @this */function getValid
 		throw new errors.NoAuthorizationProvided();
 	}
 
-	const signatureMatch = authHeader.match(/^Bearer (.+)$/);
+	const signatureMatch = authHeader.match(/^Bearer\s+(.+)$/);
 	if (!signatureMatch) {
 		throw new errors.NoAuthorizationProvided();
 	}

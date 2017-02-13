@@ -293,6 +293,35 @@ describe('validations', function() {
 		jwkInterceptor.done();
 	});
 
+	it('should return BrightspaceAuthToken even when more than one space separates "Bearer" and the signature', function *() {
+		const
+			payload = {
+				key: 'val'
+			},
+			signature = jwt.sign(payload, privateKeyPem, {
+				algorithm: 'RS256',
+				headers: {
+					kid: 'foo-bar-baz'
+				},
+				expiresIn: -1 * maxClockSkew + 1
+			});
+
+		jwkInterceptor = nock(ISSUER)
+			.replyContentLength()
+			.get(JWKS_PATH)
+			.reply(200, {
+				keys: [jwk]
+			});
+
+		token = yield validator.fromHeaders({
+			authorization: `Bearer     ${ signature }`
+		});
+		expect(token).to.be.instanceof(BrightspaceAuthToken);
+		expect(token.source).to.equal(signature);
+
+		jwkInterceptor.done();
+	});
+
 	describe('validateConfiguration', function() {
 		it('should return true when public keys can be updated', function *() {
 			jwkInterceptor = nock(ISSUER)
