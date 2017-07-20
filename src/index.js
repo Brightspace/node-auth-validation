@@ -6,11 +6,10 @@ const
 	jwkAllowedAlgorithms = require('jwk-allowed-algorithms'),
 	jwkToPem = require('jwk-to-pem'),
 	jws = require('jws'),
+	promised = require('promised-method'),
 	request = require('superagent');
 
-const
-	errors = require('./errors'),
-	promised = require('./promised');
+const errors = require('./errors');
 
 const
 	DEFAULT_ISSUER = 'https://auth.brightspace.com/core',
