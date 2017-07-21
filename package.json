@@ -6,6 +6,11 @@
     "type": "git",
     "url": "https://github.com/Brightspace/node-auth-validation.git"
   },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "main": "src/index.js",
   "scripts": {
     "check-style": "eslint .",
