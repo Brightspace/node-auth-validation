@@ -4,6 +4,10 @@ node_js:
 - 4
 - 6
 - 8
+script:
+  - npm test
+after_success:
+  - npm run report-cov
 deploy:
   provider: npm
   email: d2ltravisdeploy@d2l.com
