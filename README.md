@@ -1,5 +1,5 @@
 # brightspace-auth-validation
-[![Build Status](https://travis-ci.org/Brightspace/node-auth-validation.svg?branch=master)](https://travis-ci.org/Brightspace/node-auth-validation)
+[![Build Status](https://travis-ci.org/Brightspace/node-auth-validation.svg?branch=master)](https://travis-ci.org/Brightspace/node-auth-validation) [![Coverage Status](https://coveralls.io/repos/github/Brightspace/node-auth-validation/badge.svg?branch=master)](https://coveralls.io/github/Brightspace/node-auth-validation?branch=master)
 
 ## Usage
 

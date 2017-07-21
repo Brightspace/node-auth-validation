@@ -4,3 +4,6 @@ node_modules
 *.log
 *.swo
 *.swp
+
+.nyc_output
+coverage
