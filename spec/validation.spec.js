@@ -58,22 +58,22 @@ describe('validations', function() {
 		done();
 	});
 
-	it('should throw "NoAuthorizationProvided" when there is no auth header', function *() {
-		expect(validator.fromHeaders({}))
+	it('should throw "NoAuthorizationProvided" when there is no auth header', function() {
+		return expect(validator.fromHeaders({}))
 			.to.be.rejectedWith(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
-	it('should throw "NoAuthorizationProvided" when auth header is not a Bearer token', function *() {
-		expect(validator.fromHeaders({ authorization: 'Basic foobarbaz' }))
+	it('should throw "NoAuthorizationProvided" when auth header is not a Bearer token', function() {
+		return expect(validator.fromHeaders({ authorization: 'Basic foobarbaz' }))
 			.to.be.rejectedWith(AuthTokenValidator.errors.NoAuthorizationProvided);
 	});
 
-	it('should throw "BadToken" when invalid token is sent', function *() {
-		yield expect(validator.fromHeaders({ authorization: 'Bearer foobarbaz' }))
+	it('should throw "BadToken" when invalid token is sent', function() {
+		return expect(validator.fromHeaders({ authorization: 'Bearer foobarbaz' }))
 			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
 	});
 
-	it('should throw "BadToken" when expired token is sent', function *() {
+	it('should throw "BadToken" when expired token is sent', function() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
 			header: {
@@ -82,11 +82,11 @@ describe('validations', function() {
 			expiresIn: -1 * (maxClockSkew)
 		});
 
-		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+		return expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
 			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
 	});
 
-	it('should throw "BadToken" when not-yet-valid token is sent (outside of skew)', function *() {
+	it('should throw "BadToken" when not-yet-valid token is sent (outside of skew)', function() {
 		token = jwt.sign({}, privateKeyPem, {
 			algorithm: 'RS256',
 			header: {
@@ -95,7 +95,7 @@ describe('validations', function() {
 			notBefore: maxClockSkew + 1
 		});
 
-		yield expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
+		return expect(validator.fromHeaders({ authorization: `Bearer ${ token }` }))
 			.to.be.rejectedWith(AuthTokenValidator.errors.BadToken);
 	});
 
@@ -339,7 +339,7 @@ describe('validations', function() {
 			jwkInterceptor.done();
 		});
 
-		it('should return an error when public key lookup fails', function *() {
+		it('should return an error when public key lookup fails', function() {
 			jwkInterceptor = nock(ISSUER)
 				.get(JWKS_PATH)
 				.reply(404);
@@ -348,7 +348,7 @@ describe('validations', function() {
 				issuer: ISSUER
 			});
 
-			yield expect(auth.validateConfiguration()).to.be.rejectedWith(Error);
+			return expect(auth.validateConfiguration()).to.be.rejectedWith(Error);
 		});
 	});
 });
