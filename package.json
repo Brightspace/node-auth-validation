@@ -24,7 +24,7 @@
     "chai": "^4.1.0",
     "chai-as-promised": "^7.1.1",
     "co-mocha": "^1.1.0",
-    "coveralls": "^2.13.1",
+    "coveralls": "^3.0.0",
     "eslint": "^4.3.0",
     "eslint-config-brightspace": "^0.3.1",
     "jsonwebtoken": "^8.0.0",
