@@ -33,7 +33,7 @@
     "node-rsa": "^0.4.2",
     "nyc": "^11.2.1",
     "rsa-pem-to-jwk": "^1.1.3",
-    "sinon": "^4.0.2"
+    "sinon": "^4.1.5"
   },
   "dependencies": {
     "brightspace-auth-token": "^3.1.1",
