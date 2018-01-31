@@ -1,9 +1,0 @@
-node_modules
-.npmrc*
-
-*.log
-*.swo
-*.swp
-
-.nyc_output
-coverage
